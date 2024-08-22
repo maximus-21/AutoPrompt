@@ -2,7 +2,7 @@ from optimization_pipeline import OptimizationPipeline
 from utils.config import load_yaml, modify_input_for_ranker, validate_generation_config, override_config
 import argparse
 import os
-from estimator.estimator_llm import LLMEstimator
+from agent.agent_utils import get_tools_description
 
 # General Training Parameters
 parser = argparse.ArgumentParser()
@@ -13,12 +13,12 @@ parser.add_argument('--ranker_config_path', default='config/config_diff/config_r
                     help='Configuration file path')
 
 parser.add_argument('--task_description',
-                    default='',
+                    default='Given the following user query and the retrieved document, answer the user content.',
                     required=False, type=str, help='Describing the task')
 parser.add_argument('--prompt',
-                    default='',
+                    default='Answer the user query based on the retrieved document.',
                     required=False, type=str, help='Prompt to use as initial.')
-parser.add_argument('--load_dump', default='', required=False, type=str, help='In case of loading from checkpoint')
+parser.add_argument('--load_dump', default='dump', required=False, type=str, help='In case of loading from checkpoint')
 parser.add_argument('--output_dump', default='dump', required=False, type=str, help='Output to save checkpoints')
 parser.add_argument('--num_ranker_steps', default=20, type=int, help='Number of iterations')
 parser.add_argument('--num_generation_steps', default=20, type=int, help='Number of iterations')
@@ -56,9 +56,19 @@ if not generation_config_params.eval.function_name == 'generator':
     generation_config_params.eval.function_params = ranker_config_params.predictor.config
     generation_config_params.eval.function_params.instruction = best_prompt['prompt']
     generation_config_params.eval.function_params.label_schema = ranker_config_params.dataset.label_schema
+initial_prompt = {'prompt': initial_prompt}
+task_metadata = None
+if generation_config_params.predictor.method == 'agent':
+    tools_str, tools_dict = get_tools_description(generation_config_params.predictor.config.tools_path)
+    task_metadata = {'task_tools_description': tools_str,
+                     'tools_names': ', '.join(tools_dict.keys())}
+    initial_prompt['task_tools_description'] = task_metadata['task_tools_description']
+
+
 
 generation_pipeline = OptimizationPipeline(generation_config_params, task_description, initial_prompt,
-                                           output_path=os.path.join(opt.output_dump, 'generator'))
+                                           output_path=os.path.join(opt.output_dump, 'generator'),
+                                           task_metadata=task_metadata)
 if opt.load_dump != '':
     generation_pipeline.load_state(os.path.join(opt.load_dump, 'generator'))
 best_generation_prompt = generation_pipeline.run_pipeline(opt.num_generation_steps)

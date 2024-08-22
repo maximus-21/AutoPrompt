@@ -35,9 +35,9 @@ meta_prompts:
     num_err_prompt: 1  # Number of error examples per sample in the prompt generation
     num_err_samples: 2 # Number of error examples per sample in the sample generation
     history_length: 4 # Number of sample in the meta-prompt history
-    num_generated_samples: 10 # Number of generated samples at each iteration
-    num_initialize_samples: 10 # Number of generated samples at iteration 0, in zero-shot case
-    samples_generation_batch: 10 # Number of samples generated in one call to the LLM
+    num_generated_samples: 5 # Number of generated samples at each iteration
+    num_initialize_samples: 5 # Number of generated samples at iteration 0, in zero-shot case
+    samples_generation_batch: 5 # Number of samples generated in one call to the LLM
     num_workers: 5 #Number of parallel workers
     warmup: 4 # Number of warmup steps
 
